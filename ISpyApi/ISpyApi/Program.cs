@@ -18,7 +18,12 @@ app.MapGet("/host", (string hostname, float aiPercentage) =>
 {
     if (!Verify.Username(ref hostname))
     {
-        return "error";
+        return "error: hostname";
+    }
+
+    if (!Verify.AiPercentage(aiPercentage))
+    {
+        return "error: ai percentage";
     }
 
     lock (gamesLock)
@@ -35,7 +40,7 @@ app.MapGet("/join", (ulong code, string username) =>
 {
     if (!Verify.Username(ref username))
     {
-        return "error";
+        return "error: username";
     }
 
     lock (gamesLock)
@@ -47,7 +52,7 @@ app.MapGet("/join", (ulong code, string username) =>
             return gamesSb.ToString();
         }
 
-        return "error";
+        return "error: joining game";
     }
 });
 
@@ -60,7 +65,7 @@ app.MapGet("/players", (Guid guid) =>
             return JsonSerializer.Serialize(game!.Players);
         }
 
-        return "error";
+        return "error: getting game with guid";
     }
 });
 

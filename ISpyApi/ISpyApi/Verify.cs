@@ -13,4 +13,9 @@ public static partial class Verify
 
         return username.Length > 0;
     }
+
+    public static bool AiPercentage(float aiPercentage)
+    {
+        return aiPercentage >= 0 && aiPercentage <= 1;
+    }
 }
