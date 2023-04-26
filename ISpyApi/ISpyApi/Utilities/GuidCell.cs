@@ -1,8 +1,8 @@
 ﻿namespace ISpyApi.Utilities;
 
-public class GuidBox
+public class GuidCell
 {
-    private object guidLock = new();
+    private readonly object guidLock = new();
     private Guid guid = Guid.Empty;
 
     public Guid Get()

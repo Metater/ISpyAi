@@ -2,16 +2,18 @@
 using System;
 using System.Threading.Channels;
 using ISpyApi.Utilities;
+using System.Collections.Concurrent;
 
 namespace ISpyApi;
 
 public class ISpyApiService : BackgroundService
 {
-    private readonly Channel<(object schema, GuidBox? guidBox)> channel;
+    private readonly ConcurrentDictionary<Guid, ConcurrentQueue<string>> queuedSchemas = new();
+    private readonly Channel<(object schema, GuidCell? guidCell)> channel;
     private readonly ILogger<ISpyApiService> logger;
     private readonly Games games = new();
 
-    public ISpyApiService(Channel<(object schema, GuidBox? guidBox)> channel, ILogger<ISpyApiService> logger)
+    public ISpyApiService(Channel<(object schema, GuidCell? guidCell)> channel, ILogger<ISpyApiService> logger)
     {
         this.channel = channel;
         this.logger = logger;
@@ -19,7 +21,7 @@ public class ISpyApiService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await foreach ((object schema, GuidBox? guidBox) in channel.Reader.ReadAllAsync(stoppingToken))
+        await foreach ((object schema, GuidCell? guidCell) in channel.Reader.ReadAllAsync(stoppingToken))
         {
             try
             {

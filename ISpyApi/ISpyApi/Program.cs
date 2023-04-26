@@ -9,12 +9,12 @@ const int MaxChannelSize = MaxMemory / MaxMessageSize;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton((_) => Channel.CreateBounded<(object schema, GuidBox? guidBox)>(MaxChannelSize));
+builder.Services.AddSingleton((_) => Channel.CreateBounded<(object schema, GuidCell? guidCell)>(MaxChannelSize));
 builder.Services.AddHostedService<ISpyApiService>();
 
 var app = builder.Build();
 
-app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object schema, GuidBox? guidBox)> channel) =>
+app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object schema, GuidCell? guidCell)> channel) =>
 {
     if (request.ContentLength is not null && request.ContentLength > MaxMessageSize)
     {
@@ -39,7 +39,7 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
         Guid guid = Guid.Empty;
         bool hasGuid = false;
 
-        GuidBox? guidBox = null;
+        GuidCell? guidCell = null;
 
         if (lines.Length > 0 && Guid.TryParse(lines[0], out guid))
         {
@@ -47,7 +47,7 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
         }
         else
         {
-            guidBox = new();
+            guidCell = new();
         }
 
         for (int i = hasGuid ? 1 : 0; i < lines.Length / 2; i += 2)
@@ -56,7 +56,7 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
             string json = lines[i + 1];
             if (Schemas.FromJson(name, json, out object? schema))
             {
-                if (!channel.Writer.TryWrite((schema!, guidBox)))
+                if (!channel.Writer.TryWrite((schema!, guidCell)))
                 {
                     return Results.StatusCode(StatusCodes.Status429TooManyRequests);
                 }
@@ -76,7 +76,7 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
         }
         else
         {
-            guid = guidBox!.Get();
+            guid = guidCell!.Get();
             return Results.Text(guid.ToString());
         }
     }
@@ -85,8 +85,6 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
         return Results.BadRequest();
     }
 });
-
-
 
 /*app.MapGet("/host", (string hostname, float aiPercentage) =>
 {
