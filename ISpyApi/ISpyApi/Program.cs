@@ -1,20 +1,94 @@
 using ISpyApi;
+using ISpyApi.Utilities;
 using System.Text;
-using System.Text.Json;
+using System.Threading.Channels;
+
+const int MaxMemory = 500 * 1024 * 1024;
+const int MaxMessageSize = 80 * 1024;
+const int MaxChannelSize = MaxMemory / MaxMessageSize;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddSingleton((_) => Channel.CreateBounded<(object schema, GuidBox? guidBox)>(MaxChannelSize));
+builder.Services.AddHostedService<ISpyApiService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object schema, GuidBox? guidBox)> channel) =>
+{
+    if (request.ContentLength is not null && request.ContentLength > MaxMessageSize)
+    {
+        return Results.BadRequest();
+    }
 
-object gamesLock = new();
-Games games = new();
-StringBuilder gamesSb = new();
+    var readSize = (int?)request.ContentLength ?? (MaxMessageSize + 1);
+    var buffer = new byte[readSize];
+    var read = await body.ReadAtLeastAsync(buffer, readSize, false);
 
-app.MapGet("/host", (string hostname, float aiPercentage) =>
+    if (read > MaxMessageSize)
+    {
+        return Results.BadRequest();
+    }
+
+    try
+    {
+        string data = Encoding.UTF8.GetString(buffer);
+        data = Uri.UnescapeDataString(data);
+        string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
+
+        Guid guid = Guid.Empty;
+        bool hasGuid = false;
+
+        GuidBox? guidBox = null;
+
+        if (lines.Length > 0 && Guid.TryParse(lines[0], out guid))
+        {
+            hasGuid = true;
+        }
+        else
+        {
+            guidBox = new();
+        }
+
+        for (int i = hasGuid ? 1 : 0; i < lines.Length / 2; i += 2)
+        {
+            string name = lines[i];
+            string json = lines[i + 1];
+            if (Schemas.FromJson(name, json, out object? schema))
+            {
+                if (!channel.Writer.TryWrite((schema!, guidBox)))
+                {
+                    return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+                }
+            }
+            else
+            {
+                return Results.BadRequest();
+            }
+        }
+
+        await Task.Delay(100);
+
+        if (hasGuid)
+        {
+            // TODO Read then Results.Text()
+            return Results.Accepted();
+        }
+        else
+        {
+            guid = guidBox!.Get();
+            return Results.Text(guid.ToString());
+        }
+    }
+    catch
+    {
+        return Results.BadRequest();
+    }
+});
+
+
+
+/*app.MapGet("/host", (string hostname, float aiPercentage) =>
 {
     if (!Verify.Username(ref hostname))
     {
@@ -67,6 +141,6 @@ app.MapGet("/players", (Guid guid) =>
 
         return "error: getting game with guid";
     }
-});
+});*/
 
 app.Run();

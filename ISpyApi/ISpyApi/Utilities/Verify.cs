@@ -1,4 +1,4 @@
-﻿namespace ISpyApi;
+﻿namespace ISpyApi.Utilities;
 
 using System.Text.RegularExpressions;
 

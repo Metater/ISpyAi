@@ -1,4 +1,6 @@
-﻿namespace ISpyApi;
+﻿using ISpyApi.Factories;
+
+namespace ISpyApi;
 
 public class Games
 {

@@ -1,6 +1,4 @@
-﻿using ISpyApi;
-
-namespace ISpyApi;
+﻿namespace ISpyApi;
 
 public class ImageFactory
 {
@@ -688,9 +686,9 @@ public class ImageFactory
         "photog_99274C.png"
     };
 
+    private readonly Random random;
     private readonly List<string> aiImages = new();
     private readonly List<string> realImages = new();
-    private readonly Random random;
 
     public ImageFactory(Random random)
     {

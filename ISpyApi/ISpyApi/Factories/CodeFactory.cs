@@ -1,4 +1,4 @@
-﻿namespace ISpyApi;
+﻿namespace ISpyApi.Factories;
 
 public class CodeFactory
 {
