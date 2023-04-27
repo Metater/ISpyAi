@@ -687,8 +687,16 @@ public class ImageFactory
     };
 
     private readonly Random random;
+
     private readonly List<string> aiImages = new();
+    private readonly List<string> aiAnimalImages = new();
+    private readonly List<string> aiArtImages = new();
+    private readonly List<string> aiPhotogImages = new();
+
     private readonly List<string> realImages = new();
+    private readonly List<string> realAnimalImages = new();
+    private readonly List<string> realArtImages = new();
+    private readonly List<string> realPhotogImages = new();
 
     public ImageFactory(Random random)
     {
@@ -696,7 +704,44 @@ public class ImageFactory
 
         foreach (var image in images)
         {
-            if (image[^5] == 'C')
+            string type = image[..3];
+            bool isAiImage = image[^5] == 'C';
+
+            if (type == "ani")
+            {
+                if (isAiImage)
+                {
+                    aiAnimalImages.Add(image);
+                }
+                else
+                {
+                    realAnimalImages.Add(image);
+                }
+            }
+            else if (type = "art")
+            {
+                if (isAiImage)
+                {
+                    aiArtImages.Add(image);
+                }
+                else
+                {
+                    realArtImages.Add(image);
+                }
+            }
+            else if (type = "pho")
+            {
+                if (isAiImage)
+                {
+                    aiPhotogImages.Add(image);
+                }
+                else
+                {
+                    realPhotogImages.Add(image);
+                }
+            }
+
+            if (isAiImage)
             {
                 aiImages.Add(image);
             }
@@ -706,11 +751,18 @@ public class ImageFactory
             }
         }
 
-        Console.WriteLine($"Ai images: {aiImages.Count}");
-        Console.WriteLine($"Real images: {realImages.Count}");
+        Console.WriteLine($"Total ai images: {aiImages.Count}");
+        Console.WriteLine($"Ai animal images: {aiAnimalImages.Count}");
+        Console.WriteLine($"Ai art images: {aiArtImages.Count}");
+        Console.WriteLine($"Ai photog images: {aiPhotogImages.Count}");
+
+        Console.WriteLine($"Total real images: {realImages.Count}");
+        Console.WriteLine($"Real animal images: {realAnimalImages.Count}");
+        Console.WriteLine($"Real art images: {realArtImages.Count}");
+        Console.WriteLine($"Real photog images: {realPhotogImages.Count}");
     }
 
-    private string GetRandomImages(List<string> images)
+    private string GetRandomImage(List<string> images)
     {
         int index = random.Next(0, images.Count);
         return images[index];
@@ -718,6 +770,13 @@ public class ImageFactory
 
     private static string GetImageUrl(string image, bool isHighRes = true) => $"https://raw.githubusercontent.com/Metater/ISpyAi/main/images/{(isHighRes ? "512" : "256")}/{image}";
 
-    public string GetRandomAiImageUrl(bool isHighRes) => GetImageUrl(GetRandomImages(aiImages), isHighRes);
-    public string GetRandomRealImageUrl(bool isHighRes) => GetImageUrl(GetRandomImages(realImages), isHighRes);
+    public string GetRandomAiImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiImages), isHighRes);
+    public string GetRandomAiAnimalImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiAnimalImages), isHighRes);
+    public string GetRandomAiArtImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiArtImages), isHighRes);
+    public string GetRandomAiPhotogImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiPhotogImages), isHighRes);
+
+    public string GetRandomRealImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realImages), isHighRes);
+    public string GetRandomRealAnimalImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realAnimalImages), isHighRes);
+    public string GetRandomRealArtImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realArtImages), isHighRes);
+    public string GetRandomRealPhotogImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realPhotogImages), isHighRes);
 }

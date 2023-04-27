@@ -6,21 +6,19 @@ namespace ISpyApi;
 public class Games
 {
     private readonly Action<Guid, object> send;
-    private readonly Random random = new();
-    private readonly ImageFactory imageFactory;
-    private readonly CodeFactory codeFactory = new();
+    private readonly Resources resources;
     private readonly List<Game> games = new();
 
     public Games(Action<Guid, object> send)
     {
         this.send = send;
-        imageFactory = new(random);
+        Random random = new();
+        resources = new Resources(random, new(random), new());
     }
 
     public Game Host(string hostname)
     {
         Game game = new(random, imageFactory, codeFactory, hostname);
-        game.Init();
         games.Add(game);
         return game;
     }
@@ -50,7 +48,7 @@ public class Games
 
     public bool GetGameWithGuid(Guid guid, out Game? game)
     {
-        game = games.Find(g => g.HasPlayerWithGuid(guid));
+        game = games.Find(g => g.Players.ContainsKey(guid));
         return game is not null;
     }
 

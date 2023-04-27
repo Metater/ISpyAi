@@ -15,14 +15,6 @@ public class StringBuilderCell
         }
     }
 
-    public void Clear()
-    {
-        lock (sbLock)
-        {
-            sb.Clear();
-        }
-    }
-
     public override string ToString()
     {
         lock (sbLock)

@@ -2,14 +2,17 @@ using ISpyApi;
 using ISpyApi.Utilities;
 using System.Text;
 
+// Create app
 var builder = WebApplication.CreateBuilder(args);
 
 // Create service and allow service to be injectable
 builder.Services.AddSingleton<ISpyApiService>();
 builder.Services.AddHostedService(p => p.GetRequiredService<ISpyApiService>());
 
+// Build app
 var app = builder.Build();
 
+// Called by a unity client that wants to host a game
 app.MapGet("/host/{hostname}", (string hostname, ISpyApiService service) =>
 {
     if (!Verify.Username(ref hostname))
@@ -21,6 +24,7 @@ app.MapGet("/host/{hostname}", (string hostname, ISpyApiService service) =>
     return Schemas.ToJson(response);
 });
 
+// Called by a unity client that wants to join a game
 app.MapGet("/join/{code}/{username}", (ulong code, string username, ISpyApiService service) =>
 {
     if (!Verify.Username(ref username))
@@ -36,6 +40,7 @@ app.MapGet("/join/{code}/{username}", (ulong code, string username, ISpyApiServi
     return "error";
 });
 
+// Called by unity clients perodically
 app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, ISpyApiService service) =>
 {
     if (request.ContentLength is not null && request.ContentLength > ISpyApiService.MaxMessageSize)

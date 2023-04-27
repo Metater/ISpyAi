@@ -2,44 +2,6 @@ using ISpyApi.Utilities;
 
 namespace ISpyApi;
 
-#nullable enable
-
-public static class Schemas
-{
-    public static bool FromJson(string name, string json, out object? schema)
-    {
-        switch (name)
-        {
-            case nameof(HostResponse): return FromJson<HostResponse>(json, out schema);
-            case nameof(JoinResponse): return FromJson<JoinResponse>(json, out schema);
-            default:
-                Console.WriteLine($"Unknown schema name: {name}");
-                schema = default;
-                return false;
-        }
-    }
-
-    private static bool FromJson<T>(string json, out object? schema)
-    {
-        try
-        {
-            schema = JsonUtility.FromJson<T>(json);
-            return schema is not null;
-        }
-        catch
-        {
-            schema = default;
-            return false;
-        }
-    }
-
-    public static string ToJson(object schema)
-    {
-        string name = schema!.ToString()!.Split('.').Last();
-        return name + "\n" + JsonUtility.ToJson(schema);
-    }
-}
-
 #nullable disable
 
 [Serializable]
@@ -61,6 +23,42 @@ public class JoinResponse
 public class PlayersResponse
 {
     public List<string> players;
+}
+
+public static class Schemas
+{
+    public static bool FromJson(string name, string json, out object schema)
+    {
+        switch (name)
+        {
+            case nameof(HostResponse): return FromJson<HostResponse>(json, out schema);
+            case nameof(JoinResponse): return FromJson<JoinResponse>(json, out schema);
+            default:
+                Console.WriteLine($"Unknown schema name: {name}");
+                schema = default;
+                return false;
+        }
+    }
+
+    private static bool FromJson<T>(string json, out object schema)
+    {
+        try
+        {
+            schema = JsonUtility.FromJson<T>(json);
+            return schema is not null;
+        }
+        catch
+        {
+            schema = default;
+            return false;
+        }
+    }
+
+    public static string ToJson(object schema)
+    {
+        string name = schema.ToString().Split('.').Last();
+        return name + "\n" + JsonUtility.ToJson(schema);
+    }
 }
 
 #nullable enable

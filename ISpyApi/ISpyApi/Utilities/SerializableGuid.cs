@@ -3,11 +3,11 @@
 [Serializable]
 public struct SerializableGuid : IComparable, IComparable<SerializableGuid>, IEquatable<SerializableGuid>
 {
-    public string Value;
+    public string value;
 
     private SerializableGuid(string value)
     {
-        Value = value;
+        this.value = value;
     }
 
     public static implicit operator SerializableGuid(Guid guid)
@@ -17,7 +17,7 @@ public struct SerializableGuid : IComparable, IComparable<SerializableGuid>, IEq
 
     public static implicit operator Guid(SerializableGuid serializableGuid)
     {
-        return new Guid(serializableGuid.Value);
+        return new Guid(serializableGuid.value);
     }
 
     public int CompareTo(object? value)
@@ -27,17 +27,17 @@ public struct SerializableGuid : IComparable, IComparable<SerializableGuid>, IEq
         if (value is not SerializableGuid)
             throw new ArgumentException("Must be SerializableGuid");
         SerializableGuid guid = (SerializableGuid)value;
-        return guid.Value == Value ? 0 : 1;
+        return guid.value == this.value ? 0 : 1;
     }
 
     public int CompareTo(SerializableGuid other)
     {
-        return other.Value == Value ? 0 : 1;
+        return other.value == this.value ? 0 : 1;
     }
 
     public bool Equals(SerializableGuid other)
     {
-        return Value == other.Value;
+        return this.value == other.value;
     }
 
     public override bool Equals(object? obj)
@@ -47,12 +47,12 @@ public struct SerializableGuid : IComparable, IComparable<SerializableGuid>, IEq
 
     public override int GetHashCode()
     {
-        return (Value != null ? Value.GetHashCode() : 0);
+        return (this.value != null ? this.value.GetHashCode() : 0);
     }
 
     public override string ToString()
     {
-        return (Value != null ? new Guid(Value).ToString() : string.Empty);
+        return (this.value != null ? new Guid(this.value).ToString() : string.Empty);
     }
 
     public static bool operator ==(SerializableGuid left, SerializableGuid right)

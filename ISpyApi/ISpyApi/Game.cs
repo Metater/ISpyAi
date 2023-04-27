@@ -1,28 +1,24 @@
 ﻿using ISpyApi.Factories;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace ISpyApi;
 
-public record Game(Random Random, ImageFactory ImageFactory, CodeFactory CodeFactory, string Hostname)
+public class Game()
 {
-    public Player Host { get; init; } = new(Hostname);
-    public ulong Code { get; init; } = CodeFactory.GetNextCode();
-    public List<Player> Players { get; init; } = new();
-    public DateTime LastAccess { get; private set; } = DateTime.Now;
+    private const double TimeoutSeconds = 10;
 
-    public void Init()
+    private readonly Resources resources;
+    public Player Host { get; init; }
+    public ulong Code { get; init; }
+    public Dictionary<Guid, Player> Players { get; init; } = new();
+    public DateTime LastAccessedTime { get; private set; } = DateTime.Now;
+
+    public Game(Resources resources, string hostname)
     {
+        this.resources = resources;
+        Host = new(hostname);
+        Code = resources.CodeFactory.GetNextCode();
+
         Players.Add(Host);
-    }
-
-    public bool HasPlayerWithGuid(Guid guid)
-    {
-        if (Host.Guid == guid)
-        {
-            return true;
-        }
-
-        return Players.Any(p => p.Guid == guid);
     }
 
     public Player Join(string username)
@@ -34,8 +30,15 @@ public record Game(Random Random, ImageFactory ImageFactory, CodeFactory CodeFac
         return player;
     }
 
+    #region Timeout
     private void Accessed()
     {
-        LastAccess = DateTime.Now;
+        LastAccessedTime = DateTime.Now;
     }
+
+    public bool ShouldTimeout()
+    {
+        return (DateTime.Now - LastAccessedTime).TotalSeconds > TimeoutSeconds;
+    }
+    #endregion
 }
