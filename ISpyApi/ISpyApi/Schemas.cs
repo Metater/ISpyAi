@@ -10,8 +10,8 @@ public static class Schemas
     {
         switch (name)
         {
-            case nameof(HostRequest):
-                return FromJson<HostRequest>(json, out schema);
+            case nameof(HostResponse): return FromJson<HostResponse>(json, out schema);
+            case nameof(JoinResponse): return FromJson<JoinResponse>(json, out schema);
             default:
                 Console.WriteLine($"Unknown schema name: {name}");
                 schema = default;
@@ -33,7 +33,7 @@ public static class Schemas
         }
     }
 
-    public static string ToJson<T>(T schema)
+    public static string ToJson(object schema)
     {
         string name = schema!.ToString()!.Split('.').Last();
         return name + "\n" + JsonUtility.ToJson(schema);
@@ -43,10 +43,24 @@ public static class Schemas
 #nullable disable
 
 [Serializable]
-public class HostRequest
+public class HostResponse
 {
     public string hostname;
-    public float aiPercentage;
+    public SerializableGuid guid;
+    public ulong code;
+}
+
+[Serializable]
+public class JoinResponse
+{
+    public string username;
+    public SerializableGuid guid;
+}
+
+[Serializable]
+public class PlayersResponse
+{
+    public List<string> players;
 }
 
 #nullable enable

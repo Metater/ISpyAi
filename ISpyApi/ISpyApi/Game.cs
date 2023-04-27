@@ -3,12 +3,17 @@ using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace ISpyApi;
 
-public record Game(Random Random, ImageFactory ImageFactory, CodeFactory CodeFactory, string Hostname, float AiPercentage)
+public record Game(Random Random, ImageFactory ImageFactory, CodeFactory CodeFactory, string Hostname)
 {
     public Player Host { get; init; } = new(Hostname);
     public ulong Code { get; init; } = CodeFactory.GetNextCode();
     public List<Player> Players { get; init; } = new();
     public DateTime LastAccess { get; private set; } = DateTime.Now;
+
+    public void Init()
+    {
+        Players.Add(Host);
+    }
 
     public bool HasPlayerWithGuid(Guid guid)
     {
@@ -27,16 +32,6 @@ public record Game(Random Random, ImageFactory ImageFactory, CodeFactory CodeFac
         Player player = new(username);
         Players.Add(player);
         return player;
-    }
-
-    public string GetRandomImageUrl()
-    {
-        if (Random.NextSingle() < AiPercentage)
-        {
-            return ImageFactory.GetRandomAiImageUrl(false);
-        }
-
-        return ImageFactory.GetRandomRealImageUrl(true);
     }
 
     private void Accessed()

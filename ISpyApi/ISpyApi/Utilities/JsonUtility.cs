@@ -6,7 +6,7 @@ public static class JsonUtility
 {
     private static readonly JsonSerializerOptions options = new() { IncludeFields = true };
 
-    public static string ToJson<T>(T value)
+    public static string ToJson(object value)
     {
         return JsonSerializer.Serialize(value, options);
     }

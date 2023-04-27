@@ -1,31 +1,53 @@
 using ISpyApi;
 using ISpyApi.Utilities;
 using System.Text;
-using System.Threading.Channels;
-
-const int MaxMemory = 500 * 1024 * 1024;
-const int MaxMessageSize = 80 * 1024;
-const int MaxChannelSize = MaxMemory / MaxMessageSize;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton((_) => Channel.CreateBounded<(object schema, GuidCell? guidCell)>(MaxChannelSize));
-builder.Services.AddHostedService<ISpyApiService>();
+// Create service and allow service to be injectable
+builder.Services.AddSingleton<ISpyApiService>();
+builder.Services.AddHostedService(p => p.GetRequiredService<ISpyApiService>());
 
 var app = builder.Build();
 
-app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object schema, GuidCell? guidCell)> channel) =>
+app.MapGet("/host/{hostname}", (string hostname, ISpyApiService service) =>
 {
-    if (request.ContentLength is not null && request.ContentLength > MaxMessageSize)
+    if (!Verify.Username(ref hostname))
+    {
+        return "error";
+    }
+
+    var response = service.Host(hostname);
+    return Schemas.ToJson(response);
+});
+
+app.MapGet("/join/{code}/{username}", (ulong code, string username, ISpyApiService service) =>
+{
+    if (!Verify.Username(ref username))
+    {
+        return "error";
+    }
+
+    if (service.Join(code, username, out var response))
+    {
+        return Schemas.ToJson(response!);
+    }
+
+    return "error";
+});
+
+app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, ISpyApiService service) =>
+{
+    if (request.ContentLength is not null && request.ContentLength > ISpyApiService.MaxMessageSize)
     {
         return Results.BadRequest();
     }
 
-    var readSize = (int?)request.ContentLength ?? (MaxMessageSize + 1);
+    var readSize = (int?)request.ContentLength ?? (ISpyApiService.MaxMessageSize + 1);
     var buffer = new byte[readSize];
     var read = await body.ReadAtLeastAsync(buffer, readSize, false);
 
-    if (read > MaxMessageSize)
+    if (read > ISpyApiService.MaxMessageSize)
     {
         return Results.BadRequest();
     }
@@ -33,33 +55,19 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
     try
     {
         string data = Encoding.UTF8.GetString(buffer);
+        Console.WriteLine(data);
+        Console.WriteLine("------------------------");
         data = Uri.UnescapeDataString(data);
         string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
 
-        Guid guid = Guid.Empty;
-        bool hasGuid = false;
-
-        GuidCell? guidCell = null;
-
-        if (lines.Length > 0 && Guid.TryParse(lines[0], out guid))
-        {
-            hasGuid = true;
-        }
-        else
-        {
-            guidCell = new();
-        }
-
-        for (int i = hasGuid ? 1 : 0; i < lines.Length / 2; i += 2)
+        List<object> schemas = new();
+        for (int i = 0; i < lines.Length / 2; i += 2)
         {
             string name = lines[i];
             string json = lines[i + 1];
             if (Schemas.FromJson(name, json, out object? schema))
             {
-                if (!channel.Writer.TryWrite((schema!, guidCell)))
-                {
-                    return Results.StatusCode(StatusCodes.Status429TooManyRequests);
-                }
+                schemas.Add(schema!);
             }
             else
             {
@@ -67,78 +75,20 @@ app.MapPost("/poll", async (HttpRequest request, Stream body, Channel<(object sc
             }
         }
 
+        if (!service.Input(guid, schemas))
+        {
+            return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+        }
+
         await Task.Delay(100);
 
-        if (hasGuid)
-        {
-            // TODO Read then Results.Text()
-            return Results.Accepted();
-        }
-        else
-        {
-            guid = guidCell!.Get();
-            return Results.Text(guid.ToString());
-        }
+        string output = service.Output(guid);
+        return Results.Text(output);
     }
     catch
     {
         return Results.BadRequest();
     }
 });
-
-/*app.MapGet("/host", (string hostname, float aiPercentage) =>
-{
-    if (!Verify.Username(ref hostname))
-    {
-        return "error: hostname";
-    }
-
-    if (!Verify.AiPercentage(aiPercentage))
-    {
-        return "error: ai percentage";
-    }
-
-    lock (gamesLock)
-    {
-        var game = games.Host(hostname, aiPercentage);
-        gamesSb.Clear();
-        gamesSb.AppendLine(game.Host.Guid.ToString());
-        gamesSb.AppendLine(game.Code.ToString());
-        return gamesSb.ToString();
-    }
-});
-
-app.MapGet("/join", (ulong code, string username) =>
-{
-    if (!Verify.Username(ref username))
-    {
-        return "error: username";
-    }
-
-    lock (gamesLock)
-    {
-        if (games.Join(code, username, out Player? player))
-        {
-            gamesSb.Clear();
-            gamesSb.AppendLine(player!.Guid.ToString());
-            return gamesSb.ToString();
-        }
-
-        return "error: joining game";
-    }
-});
-
-app.MapGet("/players", (Guid guid) =>
-{
-    lock (gamesLock)
-    {
-        if (games.GetGameWithGuid(guid, out Game? game))
-        {
-            return JsonSerializer.Serialize(game!.Players);
-        }
-
-        return "error: getting game with guid";
-    }
-});*/
 
 app.Run();
