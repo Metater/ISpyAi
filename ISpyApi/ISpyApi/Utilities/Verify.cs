@@ -11,6 +11,6 @@ public static partial class Verify
     {
         username = UsernameRegex().Replace(username, "");
 
-        return username.Length > 0;
+        return username.Length > 0 && username.Length <= 24;
     }
 }

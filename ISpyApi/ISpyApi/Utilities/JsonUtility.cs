@@ -11,8 +11,8 @@ public static class JsonUtility
         return JsonSerializer.Serialize(value, options);
     }
 
-    public static T? FromJson<T>(string json)
+    public static object? FromJson(string json, Type type)
     {
-        return JsonSerializer.Deserialize<T>(json, options);
+        return JsonSerializer.Deserialize(json, type, options);
     }
 }

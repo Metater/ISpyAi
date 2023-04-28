@@ -1,5 +1,7 @@
 using ISpyApi;
 using ISpyApi.Utilities;
+using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 // Create app

@@ -42,14 +42,6 @@ public class Games
 
     public void SchemaReceived(Guid guid, object schema)
     {
-        if (schema is TestImageRequest testImageRequest)
-        {
-            resources.SendSchema(guid, new TestImageResponse
-            {
-                uri = resources.ImageFactory.GetRandomAiImageUri(false)
-            });
-        }
-        else
         {
             Console.WriteLine($"Got unimplemented schema type: {schema}");
         }

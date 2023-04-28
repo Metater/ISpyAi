@@ -1,3 +1,5 @@
+using System.Reflection;
+
 #if !UNITY_64
 using ISpyApi.Utilities;
 
@@ -28,45 +30,52 @@ public class JoinResponse
 [Serializable]
 public class PeriodicUpdate
 {
-    public long serverFileTimeUtc; 
+    public long serverFileTimeUtc;
     public List<string> players;
-}
-
-[Serializable]
-public class TestImageRequest
-{
-
-}
-
-[Serializable]
-public class TestImageResponse
-{
-    public string uri;
 }
 
 public static class Schemas
 {
+    private static Assembly assembly;
+    private static readonly Dictionary<string, Type> types = new();
+
     public static bool FromJson(string name, string json, out object schema)
     {
-        switch (name)
+        assembly ??= Assembly.GetCallingAssembly();
+
+        if (!types.TryGetValue(name, out Type type))
         {
-            case nameof(HostResponse): return FromJson<HostResponse>(json, out schema);
-            case nameof(JoinResponse): return FromJson<JoinResponse>(json, out schema);
-            case nameof(PeriodicUpdate): return FromJson<PeriodicUpdate>(json, out schema);
-            case nameof(TestImageRequest): return FromJson<TestImageRequest>(json, out schema);
-            case nameof(TestImageResponse): return FromJson<TestImageResponse>(json, out schema);
-            default:
-                Console.WriteLine($"Unknown schema name: {name}");
-                schema = default;
-                return false;
+            foreach (var t in assembly.GetTypes())
+            {
+                if (t.Name == name)
+                {
+                    type = t;
+                    break;
+                }
+            }
+
+            types.Add(name, type);
         }
+
+        if (type is not null)
+        {
+            return FromJson(json, type, out schema);
+        }
+
+#if UNITY_64
+        Debug.Log($"Unknown schema name: {name}");
+#else
+        Console.WriteLine($"Unknown schema name: {name}");
+#endif
+        schema = default;
+        return false;
     }
 
-    private static bool FromJson<T>(string json, out object schema)
+    private static bool FromJson(string json, Type type, out object schema)
     {
         try
         {
-            schema = JsonUtility.FromJson<T>(json);
+            schema = JsonUtility.FromJson(json, type);
             return schema is not null;
         }
         catch

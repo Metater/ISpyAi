@@ -1,19 +1,19 @@
-using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public float netPollPeriod = 0.5f;
     public NetManager netManager;
-    public RawImage testImage;
-    private GameState state;
+    public List<Manager> managers;
+    private GameState lastState = null;
+    public GameState State { get; private set; }
 
     private void Awake()
     {
-        state = new DisconnectedState(this, "Unnamed", 0);
+        State = new DisconnectedState(this, "Unnamed", 0);
 
         netManager.OnSchemaReceived += OnSchemaReceived;
         netManager.OnDisconnected += OnDisconnected;
@@ -24,51 +24,73 @@ public class GameManager : MonoBehaviour
         StartCoroutine(PollLoop());
     }
 
+    private void Update()
+    {
+        if (lastState != State)
+        {
+            if (lastState is not ConnectedState && State is ConnectedState connectedState)
+            {
+                managers.ForEach(m => m.Connected(connectedState));
+            }
+            else if (lastState is not DisconnectedState && State is DisconnectedState disconnectedState)
+            {
+                managers.ForEach(m => m.Disconnected(disconnectedState));
+            }
+
+            lastState = State;
+        }
+    }
+
     private void OnSchemaReceived(object schema)
     {
         if (schema is HostResponse hostResponse)
         {
-            if (state is DisconnectedState)
+            if (State is DisconnectedState)
             {
                 netManager.ClearQueuedData();
 
-                state = new ConnectedState(this, hostResponse.hostname, hostResponse.code, true, hostResponse.guid);
+                State = new ConnectedState(this, hostResponse.hostname, hostResponse.code, true, hostResponse.guid);
             }
-
-            netManager.SendSchema(new TestImageRequest());
         }
         else if (schema is JoinResponse joinResponse)
         {
-            if (state is DisconnectedState disconnectedState)
+            if (State is DisconnectedState disconnectedState)
             {
                 netManager.ClearQueuedData();
 
-                state = new ConnectedState(this, joinResponse.username, disconnectedState.code, true, joinResponse.guid);
+                State = new ConnectedState(this, joinResponse.username, disconnectedState.code, true, joinResponse.guid);
             }
-
-            netManager.SendSchema(new TestImageRequest());
         }
         else if (schema is PeriodicUpdate periodicUpdate)
         {
-            if (state is ConnectedState connectedState)
+            if (State is ConnectedState connectedState)
             {
                 connectedState.serverFileTimeUtc = periodicUpdate.serverFileTimeUtc;
                 connectedState.players = periodicUpdate.players;
             }
         }
-        else if (schema is TestImageResponse testImageResponse)
-        {
-            StartCoroutine(netManager.ApplyTextureFromUri(testImageResponse.uri, testImage));
-        }
         else
         {
-            print($"Got unimplemented schema with name: {schema}");
+            bool handled = false;
+            foreach (var manager in managers)
+            {
+                if (manager.SchemaReceived(schema))
+                {
+                    handled = true;
+                    break;
+                }
+            }
+
+            if (!handled)
+            {
+                print($"Got unimplemented schema with name: {schema}");
+            }
         }
     }
 
     private void OnDisconnected()
     {
-        state = new DisconnectedState(this, state.username, state.code);
+        State = new DisconnectedState(this, State.username, State.code);
     }
 
     private IEnumerator PollLoop()
@@ -77,7 +99,7 @@ public class GameManager : MonoBehaviour
         {
             yield return new WaitForSecondsRealtime(netPollPeriod);
 
-            if (state is ConnectedState connectedState)
+            if (State is ConnectedState connectedState)
             {
                 StartCoroutine(netManager.Poll(connectedState.guid));
             }
@@ -89,68 +111,72 @@ public class GameManager : MonoBehaviour
         GUILayout.BeginArea(new Rect(0, 0, 300, 9999));
 
         GUILayout.BeginHorizontal();
-        GUILayout.Label($"State: {state.GetType().Name}");
+        GUILayout.Label($"State: {State.GetType().Name}");
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
-        if (state is DisconnectedState)
+        if (State is DisconnectedState)
         {
             GUILayout.Label("Username: ");
-            state.username = GUILayout.TextField(state.username);
+            State.username = GUILayout.TextField(State.username);
+            if (State.username.Length > 24)
+            {
+                State.username = State.username[..24];
+            }
         }
         else
         {
-            GUILayout.Label($"Username: {state.username}");
+            GUILayout.Label($"Username: {State.username}");
         }
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
-        if (state is DisconnectedState)
+        if (State is DisconnectedState)
         {
             GUILayout.Label("Code: ");
-            string codeText = GUILayout.TextField(state.code.ToString());
+            string codeText = GUILayout.TextField(State.code.ToString());
             if (codeText == "")
             {
                 codeText = "0";
             }
             if (ulong.TryParse(codeText, out ulong code))
             {
-                state.code = code;
+                State.code = code;
             }
         }
         else
         {
-            GUILayout.Label($"Code: {state.code}");
+            GUILayout.Label($"Code: {State.code}");
         }
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("Copy Code"))
         {
-            GUIUtility.systemCopyBuffer = state.code.ToString();
+            GUIUtility.systemCopyBuffer = State.code.ToString();
         }
-        if (state is DisconnectedState)
+        if (State is DisconnectedState)
         {
             if (GUILayout.Button("Paste Code"))
             {
                 if (ulong.TryParse(GUIUtility.systemCopyBuffer, out ulong code))
                 {
-                    state.code = code;
+                    State.code = code;
                 }
             }
         }
         GUILayout.EndHorizontal();
 
-        if (state is DisconnectedState)
+        if (State is DisconnectedState)
         {
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Host"))
             {
-                StartCoroutine(netManager.Host(state.username));
+                StartCoroutine(netManager.Host(State.username));
             }
             if (GUILayout.Button("Join"))
             {
-                StartCoroutine(netManager.Join(state.code, state.username));
+                StartCoroutine(netManager.Join(State.code, State.username));
             }
             GUILayout.EndHorizontal();
         }
@@ -159,12 +185,12 @@ public class GameManager : MonoBehaviour
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Disconnect"))
             {
-                state = new DisconnectedState(this, state.username, state.code);
+                State = new DisconnectedState(this, State.username, State.code);
             }
             GUILayout.EndHorizontal();
         }
 
-        if (state is ConnectedState connectedState)
+        if (State is ConnectedState connectedState)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label($"Server File Time Utc: {connectedState.serverFileTimeUtc}");
