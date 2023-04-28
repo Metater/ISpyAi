@@ -1,4 +1,4 @@
-﻿namespace ISpyApi.Factories;
+﻿namespace ISpyApi.General;
 
 public class ImageFactory
 {
@@ -762,14 +762,6 @@ public class ImageFactory
         Console.WriteLine($"Real photog images: {realPhotogImages.Count}");
     }
 
-    private string GetRandomImage(List<string> images)
-    {
-        int index = random.Next(0, images.Count);
-        return images[index];
-    }
-
-    private static string GetImageUri(string image, bool isHighRes = true) => $"https://raw.githubusercontent.com/Metater/ISpyAi/main/images/{(isHighRes ? "512" : "256")}/{image}";
-
     public string GetRandomAiImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiImages), isHighRes);
     public string GetRandomAiAnimalImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiAnimalImages), isHighRes);
     public string GetRandomAiArtImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiArtImages), isHighRes);
@@ -779,4 +771,12 @@ public class ImageFactory
     public string GetRandomRealAnimalImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realAnimalImages), isHighRes);
     public string GetRandomRealArtImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realArtImages), isHighRes);
     public string GetRandomRealPhotogImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realPhotogImages), isHighRes);
+
+    private string GetRandomImage(List<string> images)
+    {
+        int index = random.Next(0, images.Count);
+        return images[index];
+    }
+
+    private static string GetImageUri(string image, bool isHighRes = true) => $"https://raw.githubusercontent.com/Metater/ISpyAi/main/images/{(isHighRes ? "512" : "256")}/{image}";
 }

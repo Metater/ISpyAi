@@ -1,4 +1,4 @@
-using ISpyApi.Factories;
+using ISpyApi.General;
 
 namespace ISpyApi;
 

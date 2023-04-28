@@ -1,4 +1,4 @@
-﻿using ISpyApi.Factories;
+﻿using ISpyApi.General;
 using ISpyApi.Utilities;
 
 namespace ISpyApi;
@@ -34,19 +34,6 @@ public class Games
         return true;
     }
 
-    public bool GetGameWithGuid(Guid guid, out Game? game)
-    {
-        game = games.Find(g => g.Players.ContainsKey(guid));
-        return game is not null;
-    }
-
-    public void SchemaReceived(Guid guid, object schema)
-    {
-        {
-            Console.WriteLine($"Got unimplemented schema type: {schema}");
-        }
-    }
-
     public void RequestPeriodicOutput(Guid guid)
     {
         if (GetGameWithGuid(guid, out var game))
@@ -57,5 +44,23 @@ public class Games
                 players = game!.Players.Values.Select(p => p.Username).ToList()
             });
         }
+    }
+
+    public void SchemaReceived(Guid guid, object schema)
+    {
+        {
+            Console.WriteLine($"Got unimplemented schema type: {schema}");
+        }
+    }
+
+    public void Tick(double deltaTime)
+    {
+        games.ForEach(g => g.Tick(deltaTime));
+    }
+
+    private bool GetGameWithGuid(Guid guid, out Game? game)
+    {
+        game = games.Find(g => g.Players.ContainsKey(guid));
+        return game is not null;
     }
 }

@@ -10,7 +10,7 @@ public class Game
     public Player Host { get; init; }
     public ulong Code { get; init; }
     public Dictionary<Guid, Player> Players { get; init; } = new();
-    public DateTime LastUsedTime { get; private set; } = DateTime.Now;
+    public DateTime LastUsedTimeUtc { get; private set; } = DateTime.UtcNow;
 
     public Game(Resources resources, string hostname)
     {
@@ -33,12 +33,12 @@ public class Game
     #region Timeout
     private void Used()
     {
-        LastUsedTime = DateTime.Now;
+        LastUsedTimeUtc = DateTime.UtcNow;
     }
 
     public bool ShouldTimeout()
     {
-        return (DateTime.Now - LastUsedTime).TotalSeconds > TimeoutSeconds;
+        return (DateTime.UtcNow - LastUsedTimeUtc).TotalSeconds > TimeoutSeconds;
     }
     #endregion
 }

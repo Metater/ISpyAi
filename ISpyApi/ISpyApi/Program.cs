@@ -4,10 +4,10 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
-// Create app
+// Create app builder
 var builder = WebApplication.CreateBuilder(args);
 
-// Create service and allow service to be injectable
+// Create hosted service and allow service to be injectable
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddHostedService(p => p.GetRequiredService<GameService>());
 
@@ -42,18 +42,21 @@ app.MapGet("/join/{code}/{username}", (ulong code, string username, GameService 
     return "error";
 });
 
-// Called by unity clients perodically
+// Called by unity clients perodically to send and receive data
 app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, GameService service) =>
 {
+    // Reject if client is sending too much data
     if (request.ContentLength is not null && request.ContentLength > GameService.MaxMessageSize)
     {
         return Results.BadRequest();
     }
 
+    // Read data into byte array
     var readSize = (int?)request.ContentLength ?? (GameService.MaxMessageSize + 1);
     var buffer = new byte[readSize];
     var read = await body.ReadAtLeastAsync(buffer, readSize, false);
 
+    // Disallow client from sending too much data
     if (read > GameService.MaxMessageSize)
     {
         return Results.BadRequest();
@@ -61,10 +64,12 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
 
     try
     {
+        // Convert byte array into string and split lines
         string data = Encoding.UTF8.GetString(buffer);
         data = Uri.UnescapeDataString(data);
         string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
 
+        // Deserialize schemas
         List<object> schemas = new();
         for (int i = 0; i < lines.Length / 2; i += 2)
         {
@@ -81,14 +86,17 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
             }
         }
 
-        if (!service.Input(guid, schemas))
+        // Send schemas to service
+        if (!service.SupplySchemas(guid, schemas))
         {
             return Results.StatusCode(StatusCodes.Status429TooManyRequests);
         }
 
+        // Wait for service to process schemas and queue responses
         await Task.Delay(100);
 
-        string output = service.Output(guid);
+        // Send back any queued schemas from service
+        string output = service.RequestSchemas(guid);
         return Results.Text(output);
     }
     catch
@@ -97,4 +105,20 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
     }
 });
 
-app.Run("http://*:44464");
+// Run app on port 44464
+app.RunAsync("http://*:44464");
+
+// Tick service periodically
+GameService service = app.Services.GetRequiredService<GameService>();
+Stopwatch sw = Stopwatch.StartNew();
+double lastSeconds = 0;
+while (!Console.KeyAvailable)
+{
+    await Task.Delay(100);
+
+    double seconds = sw.Elapsed.TotalSeconds;
+    double deltaTime = seconds - lastSeconds;
+    lastSeconds = seconds;
+
+    service.Tick(deltaTime);
+}

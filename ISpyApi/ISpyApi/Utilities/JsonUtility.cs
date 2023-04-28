@@ -1,6 +1,6 @@
-namespace ISpyApi.Utilities;
-
 using System.Text.Json;
+
+namespace ISpyApi.Utilities;
 
 public static class JsonUtility
 {

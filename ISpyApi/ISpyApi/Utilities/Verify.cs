@@ -1,6 +1,6 @@
-﻿namespace ISpyApi.Utilities;
+﻿using System.Text.RegularExpressions;
 
-using System.Text.RegularExpressions;
+namespace ISpyApi.Utilities;
 
 public static partial class Verify
 {

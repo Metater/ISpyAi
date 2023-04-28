@@ -1,3 +1,4 @@
+#region Declarations
 using System.Reflection;
 
 #if !UNITY_64
@@ -11,7 +12,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 #endif
+#endregion
 
+#region General Schemas
 [Serializable]
 public class HostResponse
 {
@@ -33,7 +36,9 @@ public class PeriodicUpdate
     public long serverFileTimeUtc;
     public List<string> players;
 }
+#endregion
 
+#region Schemas
 public static class Schemas
 {
     private static Assembly assembly;
@@ -91,3 +96,4 @@ public static class Schemas
         return name + "\n" + JsonUtility.ToJson(schema);
     }
 }
+#endregion

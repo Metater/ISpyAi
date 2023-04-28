@@ -1,16 +1,17 @@
 ﻿using System.Text.Json;
 using System;
 using System.Threading.Channels;
-using ISpyApi.Utilities;
 using System.Collections.Concurrent;
+using ISpyApi.Utilities;
 
 namespace ISpyApi;
 
-public class GameService : BackgroundService
+public class GameService : BackgroundService, ITickable
 {
     public const int MaxMemory = 500 * 1024 * 1024;
     public const int MaxMessageSize = 80 * 1024;
     public const int MaxChannelSize = MaxMemory / MaxMessageSize;
+    public const double OutputTimeoutSeconds = 5;
 
     private readonly Channel<(Guid guid, List<object> schemas)> input = Channel.CreateBounded<(Guid guid, List<object> schemas)>(MaxChannelSize);
     private readonly ConcurrentDictionary<Guid, StringBuilderCell> output = new();
@@ -20,6 +21,7 @@ public class GameService : BackgroundService
 
     public GameService()
     {
+        // Way for games to send schemas back to clients
         games = new((Guid guid, object schema) =>
         {
             if (!output.TryGetValue(guid, out var sb))
@@ -35,6 +37,7 @@ public class GameService : BackgroundService
         });
     }
 
+    // Host game and generate response
     public HostResponse Host(string hostname)
     {
         lock (gamesLock)
@@ -49,6 +52,7 @@ public class GameService : BackgroundService
         }
     }
 
+    // Join game and generate response
     public bool Join(ulong code, string username, out JoinResponse? response)
     {
         lock (gamesLock)
@@ -68,12 +72,14 @@ public class GameService : BackgroundService
         }
     }
 
-    public bool Input(Guid guid, List<object> schemas)
+    // Queue schemas to be handled for a client
+    public bool SupplySchemas(Guid guid, List<object> schemas)
     {
         return input.Writer.TryWrite((guid, schemas));
     }
 
-    public string Output(Guid guid)
+    // Get queued schemas for a client
+    public string RequestSchemas(Guid guid)
     {
         StringBuilderCell? sb;
         if (!output.TryGetValue(guid, out _))
@@ -95,8 +101,27 @@ public class GameService : BackgroundService
         return "";
     }
 
+    // Pass tick through
+    public void Tick(double deltaTime)
+    {
+        lock (gamesLock)
+        {
+            // Remove old string builders after timeout
+            foreach ((Guid guid, StringBuilderCell sb) in output)
+            {
+                if (sb.ShouldTimeout(OutputTimeoutSeconds))
+                {
+                    output.TryRemove(guid, out _);
+                }
+            }
+
+            games.Tick(deltaTime);
+        }
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Handle schemas as they are received
         await foreach ((Guid guid, List<object> schemas) in input.Reader.ReadAllAsync(stoppingToken))
         {
             lock (gamesLock)

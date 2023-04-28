@@ -5,17 +5,17 @@ public record Player(string Username)
     private const double TimeoutSeconds = 5;
 
     public Guid Guid { get; init; } = Guid.NewGuid();
-    public DateTime LastUsedTime { get; private set; } = DateTime.Now;
+    public DateTime LastUsedTimeUtc { get; private set; } = DateTime.UtcNow;
 
     #region Timeout
     public void Used()
     {
-        LastUsedTime = DateTime.Now;
+        LastUsedTimeUtc = DateTime.UtcNow;
     }
 
     public bool ShouldTimeout()
     {
-        return (DateTime.Now - LastUsedTime).TotalSeconds > TimeoutSeconds;
+        return (DateTime.UtcNow - LastUsedTimeUtc).TotalSeconds > TimeoutSeconds;
     }
     #endregion
 }

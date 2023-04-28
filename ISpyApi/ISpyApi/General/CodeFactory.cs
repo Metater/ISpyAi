@@ -1,4 +1,4 @@
-﻿namespace ISpyApi.Factories;
+﻿namespace ISpyApi.General;
 
 public class CodeFactory
 {
@@ -8,13 +8,18 @@ public class CodeFactory
     public CodeFactory(Random random)
     {
         this.random = random;
-        nextCode += (ulong)random.Next(0, ushort.MaxValue);
+        nextCode += GetIncrement();
     }
 
     public ulong GetCode()
     {
         ulong code = nextCode;
-        nextCode += (ulong)random.Next(0, ushort.MaxValue);
+        nextCode += GetIncrement();
         return code;
+    }
+
+    private ulong GetIncrement()
+    {
+        return (ulong)random.Next(0, ushort.MaxValue);
     }
 }
