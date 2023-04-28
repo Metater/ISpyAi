@@ -2,7 +2,7 @@
 
 namespace ISpyApi;
 
-public class Game()
+public class Game
 {
     private const double TimeoutSeconds = 10;
 
@@ -10,35 +10,35 @@ public class Game()
     public Player Host { get; init; }
     public ulong Code { get; init; }
     public Dictionary<Guid, Player> Players { get; init; } = new();
-    public DateTime LastAccessedTime { get; private set; } = DateTime.Now;
+    public DateTime LastUsedTime { get; private set; } = DateTime.Now;
 
     public Game(Resources resources, string hostname)
     {
         this.resources = resources;
         Host = new(hostname);
-        Code = resources.CodeFactory.GetNextCode();
+        Code = resources.CodeFactory.GetCode();
 
-        Players.Add(Host);
+        Players.Add(Host.Guid, Host);
     }
 
     public Player Join(string username)
     {
-        Accessed();
+        Used();
 
         Player player = new(username);
-        Players.Add(player);
+        Players.Add(player.Guid, player);
         return player;
     }
 
     #region Timeout
-    private void Accessed()
+    private void Used()
     {
-        LastAccessedTime = DateTime.Now;
+        LastUsedTime = DateTime.Now;
     }
 
     public bool ShouldTimeout()
     {
-        return (DateTime.Now - LastAccessedTime).TotalSeconds > TimeoutSeconds;
+        return (DateTime.Now - LastUsedTime).TotalSeconds > TimeoutSeconds;
     }
     #endregion
 }

@@ -1,4 +1,4 @@
-﻿namespace ISpyApi;
+﻿namespace ISpyApi.Factories;
 
 public class ImageFactory
 {
@@ -718,7 +718,7 @@ public class ImageFactory
                     realAnimalImages.Add(image);
                 }
             }
-            else if (type = "art")
+            else if (type == "art")
             {
                 if (isAiImage)
                 {
@@ -729,7 +729,7 @@ public class ImageFactory
                     realArtImages.Add(image);
                 }
             }
-            else if (type = "pho")
+            else if (type == "pho")
             {
                 if (isAiImage)
                 {
@@ -768,15 +768,15 @@ public class ImageFactory
         return images[index];
     }
 
-    private static string GetImageUrl(string image, bool isHighRes = true) => $"https://raw.githubusercontent.com/Metater/ISpyAi/main/images/{(isHighRes ? "512" : "256")}/{image}";
+    private static string GetImageUri(string image, bool isHighRes = true) => $"https://raw.githubusercontent.com/Metater/ISpyAi/main/images/{(isHighRes ? "512" : "256")}/{image}";
 
-    public string GetRandomAiImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiImages), isHighRes);
-    public string GetRandomAiAnimalImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiAnimalImages), isHighRes);
-    public string GetRandomAiArtImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiArtImages), isHighRes);
-    public string GetRandomAiPhotogImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(aiPhotogImages), isHighRes);
+    public string GetRandomAiImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiImages), isHighRes);
+    public string GetRandomAiAnimalImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiAnimalImages), isHighRes);
+    public string GetRandomAiArtImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiArtImages), isHighRes);
+    public string GetRandomAiPhotogImageUri(bool isHighRes) => GetImageUri(GetRandomImage(aiPhotogImages), isHighRes);
 
-    public string GetRandomRealImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realImages), isHighRes);
-    public string GetRandomRealAnimalImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realAnimalImages), isHighRes);
-    public string GetRandomRealArtImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realArtImages), isHighRes);
-    public string GetRandomRealPhotogImageUrl(bool isHighRes) => GetImageUrl(GetRandomImage(realPhotogImages), isHighRes);
+    public string GetRandomRealImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realImages), isHighRes);
+    public string GetRandomRealAnimalImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realAnimalImages), isHighRes);
+    public string GetRandomRealArtImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realArtImages), isHighRes);
+    public string GetRandomRealPhotogImageUri(bool isHighRes) => GetImageUri(GetRandomImage(realPhotogImages), isHighRes);
 }

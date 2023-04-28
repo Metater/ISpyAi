@@ -6,14 +6,14 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Create service and allow service to be injectable
-builder.Services.AddSingleton<ISpyApiService>();
-builder.Services.AddHostedService(p => p.GetRequiredService<ISpyApiService>());
+builder.Services.AddSingleton<GameService>();
+builder.Services.AddHostedService(p => p.GetRequiredService<GameService>());
 
 // Build app
 var app = builder.Build();
 
 // Called by a unity client that wants to host a game
-app.MapGet("/host/{hostname}", (string hostname, ISpyApiService service) =>
+app.MapGet("/host/{hostname}", (string hostname, GameService service) =>
 {
     if (!Verify.Username(ref hostname))
     {
@@ -25,7 +25,7 @@ app.MapGet("/host/{hostname}", (string hostname, ISpyApiService service) =>
 });
 
 // Called by a unity client that wants to join a game
-app.MapGet("/join/{code}/{username}", (ulong code, string username, ISpyApiService service) =>
+app.MapGet("/join/{code}/{username}", (ulong code, string username, GameService service) =>
 {
     if (!Verify.Username(ref username))
     {
@@ -41,18 +41,18 @@ app.MapGet("/join/{code}/{username}", (ulong code, string username, ISpyApiServi
 });
 
 // Called by unity clients perodically
-app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, ISpyApiService service) =>
+app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, GameService service) =>
 {
-    if (request.ContentLength is not null && request.ContentLength > ISpyApiService.MaxMessageSize)
+    if (request.ContentLength is not null && request.ContentLength > GameService.MaxMessageSize)
     {
         return Results.BadRequest();
     }
 
-    var readSize = (int?)request.ContentLength ?? (ISpyApiService.MaxMessageSize + 1);
+    var readSize = (int?)request.ContentLength ?? (GameService.MaxMessageSize + 1);
     var buffer = new byte[readSize];
     var read = await body.ReadAtLeastAsync(buffer, readSize, false);
 
-    if (read > ISpyApiService.MaxMessageSize)
+    if (read > GameService.MaxMessageSize)
     {
         return Results.BadRequest();
     }
@@ -60,8 +60,6 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
     try
     {
         string data = Encoding.UTF8.GetString(buffer);
-        Console.WriteLine(data);
-        Console.WriteLine("------------------------");
         data = Uri.UnescapeDataString(data);
         string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
 
@@ -70,9 +68,10 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
         {
             string name = lines[i];
             string json = lines[i + 1];
-            if (Schemas.FromJson(name, json, out object? schema))
+
+            if (Schemas.FromJson(name, json, out object schema))
             {
-                schemas.Add(schema!);
+                schemas.Add(schema);
             }
             else
             {
@@ -96,4 +95,4 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
     }
 });
 
-app.Run();
+app.Run("http://*:44464");

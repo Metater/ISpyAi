@@ -5,20 +5,18 @@ namespace ISpyApi;
 
 public class Games
 {
-    private readonly Action<Guid, object> send;
     private readonly Resources resources;
     private readonly List<Game> games = new();
 
-    public Games(Action<Guid, object> send)
+    public Games(Action<Guid, object> sendSchema)
     {
-        this.send = send;
         Random random = new();
-        resources = new Resources(random, new(random), new());
+        resources = new Resources(random, new(random), new(random), sendSchema);
     }
 
     public Game Host(string hostname)
     {
-        Game game = new(random, imageFactory, codeFactory, hostname);
+        Game game = new(resources, hostname);
         games.Add(game);
         return game;
     }
@@ -28,22 +26,12 @@ public class Games
         var game = games.Find(g => g.Code == code);
         if (game is null)
         {
-            player = null;
+            player = default;
             return false;
         }
 
         player = game.Join(username);
         return true;
-    }
-
-    public List<Player> GetPlayersInGame(Guid guid)
-    {
-        if (GetGameWithGuid(guid, out Game? game))
-        {
-            return game!.Players;
-        }
-
-        return new();
     }
 
     public bool GetGameWithGuid(Guid guid, out Game? game)
@@ -52,26 +40,30 @@ public class Games
         return game is not null;
     }
 
-    public void RequestPeriodicOutput(Guid guid)
+    public void SchemaReceived(Guid guid, object schema)
     {
-        if (GetGameWithGuid(guid, out var game))
+        if (schema is TestImageRequest testImageRequest)
         {
-            send(guid, new PlayersResponse
+            resources.SendSchema(guid, new TestImageResponse
             {
-                players = game!.Players.Select(p => p.Username).ToList()
+                uri = resources.ImageFactory.GetRandomAiImageUri(false)
             });
-        }
-    }
-
-    public void HandleSchema(Guid guid, object schema)
-    {
-        if (schema is Guid test)
-        {
-
         }
         else
         {
             Console.WriteLine($"Got unimplemented schema type: {schema}");
+        }
+    }
+
+    public void RequestPeriodicOutput(Guid guid)
+    {
+        if (GetGameWithGuid(guid, out var game))
+        {
+            resources.SendSchema(guid, new PeriodicUpdate
+            {
+                serverFileTimeUtc = DateTime.UtcNow.ToFileTimeUtc(),
+                players = game!.Players.Values.Select(p => p.Username).ToList()
+            });
         }
     }
 }

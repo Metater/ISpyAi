@@ -28,7 +28,7 @@ public class JoinResponse
 [Serializable]
 public class PeriodicUpdate
 {
-    public long serverFileTimeUtc; 
+    public long serverFileTimeUtc;
     public List<string> players;
 }
 

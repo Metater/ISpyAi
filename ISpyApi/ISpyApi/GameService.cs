@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace ISpyApi;
 
-public class ISpyApiService : BackgroundService
+public class GameService : BackgroundService
 {
     public const int MaxMemory = 500 * 1024 * 1024;
     public const int MaxMessageSize = 80 * 1024;
@@ -18,9 +18,21 @@ public class ISpyApiService : BackgroundService
     private readonly object gamesLock = new();
     private readonly Games games;
 
-    public ISpyApiService()
+    public GameService()
     {
-        games = new(Send);
+        games = new((Guid guid, object schema) =>
+        {
+            if (!output.TryGetValue(guid, out var sb))
+            {
+                sb = new();
+                output.TryAdd(guid, sb);
+            }
+
+            if (output.TryGetValue(guid, out sb))
+            {
+                sb.AppendLine(Schemas.ToJson(schema));
+            }
+        });
     }
 
     public HostResponse Host(string hostname)
@@ -30,8 +42,8 @@ public class ISpyApiService : BackgroundService
             var game = games.Host(hostname);
             return new HostResponse
             {
-                hostname = game.Host.Username,
                 guid = game.Host.Guid,
+                hostname = game.Host.Username,
                 code = game.Code
             };
         }
@@ -45,8 +57,8 @@ public class ISpyApiService : BackgroundService
             {
                 response = new JoinResponse
                 {
-                    username = player!.Username,
-                    guid = player.Guid
+                    guid = player!.Guid,
+                    username = player.Username
                 };
                 return true;
             }
@@ -61,26 +73,22 @@ public class ISpyApiService : BackgroundService
         return input.Writer.TryWrite((guid, schemas));
     }
 
-    public void Send(Guid guid, object schema)
+    public string Output(Guid guid)
     {
-        if (!output.TryGetValue(guid, out var sb))
+        StringBuilderCell? sb;
+        if (!output.TryGetValue(guid, out _))
         {
             sb = new();
             output.TryAdd(guid, sb);
         }
 
-        sb.AppendLine(JsonUtility.ToJson(schema));
-    }
-
-    public string Output(Guid guid)
-    {
-        if (output.TryGetValue(guid, out var sb))
+        lock (gamesLock)
         {
-            lock (gamesLock)
-            {
-                games.RequestPeriodicOutput(guid);
-            }
+            games.RequestPeriodicOutput(guid);
+        }
 
+        if (output.TryGetValue(guid, out sb))
+        {
             return sb.ToString();
         }
 
@@ -95,7 +103,7 @@ public class ISpyApiService : BackgroundService
             {
                 foreach (var schema in schemas)
                 {
-                    games.HandleSchema(guid, schema);
+                    games.SchemaReceived(guid, schema);
                 }
             }
         }
