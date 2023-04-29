@@ -14,7 +14,9 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        State = new DisconnectedState(this, "None", "Unnamed", 0);
+        Application.runInBackground = true;
+
+        State = new DisconnectedState(this, "None", "Unnamed Player", 0);
 
         netManager.OnSchemaReceived += OnSchemaReceived;
         netManager.OnDisconnected += OnDisconnected;
@@ -94,15 +96,6 @@ public class GameManager : MonoBehaviour
                     handled = true;
                 }
             }
-
-/*            foreach (var manager in managers)
-            {
-                if (manager.SchemaReceived(schema))
-                {
-                    handled = true;
-                    break;
-                }
-            }*/
 
             if (!handled)
             {

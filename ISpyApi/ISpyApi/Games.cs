@@ -56,6 +56,8 @@ public class Games : ITickable
                 serverFileTimeUtc = DateTime.UtcNow.ToFileTimeUtc(),
                 players = game!.Players.Values.Select(p => p.Username).ToList()
             });
+
+            game.RequestPeriodicOutput(guid);
         }
     }
 

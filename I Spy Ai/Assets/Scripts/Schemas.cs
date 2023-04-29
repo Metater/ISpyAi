@@ -40,6 +40,14 @@ public class PeriodicUpdate
 }
 #endregion
 
+#region Fibbage Schemas
+[Serializable]
+public class FibbagePeriodicUpdate
+{
+    public string state;
+}
+#endregion
+
 #region Schemas
 public static class Schemas
 {

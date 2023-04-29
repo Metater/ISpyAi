@@ -1,15 +1,14 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Text;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
-using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class NetManager : MonoBehaviour
 {
+    public int normalTimeoutSeconds = 2;
+    public int textureTimeoutSeconds = 4;
     private StringBuilder sb;
     public event Action<object> OnSchemaReceived;
     public event Action OnDisconnected;
@@ -35,6 +34,8 @@ public class NetManager : MonoBehaviour
     {
         using UnityWebRequest request = UnityWebRequest.Get(GetHostUri(gameType, hostname));
 
+        request.timeout = normalTimeoutSeconds;
+
         yield return request.SendWebRequest();
 
         if (request.result != UnityWebRequest.Result.Success)
@@ -51,6 +52,8 @@ public class NetManager : MonoBehaviour
     public IEnumerator Join(ulong code, string username)
     {
         using UnityWebRequest request = UnityWebRequest.Get(GetJoinUri(code, username));
+
+        request.timeout = normalTimeoutSeconds;
 
         yield return request.SendWebRequest();
 
@@ -72,6 +75,8 @@ public class NetManager : MonoBehaviour
 
         using UnityWebRequest request = UnityWebRequest.Post(GetPollUri(guid), data);
 
+        request.timeout = normalTimeoutSeconds;
+
         yield return request.SendWebRequest();
 
         if (request.result != UnityWebRequest.Result.Success)
@@ -88,6 +93,8 @@ public class NetManager : MonoBehaviour
     public IEnumerator ApplyTextureFromUri(string uri, RawImage image)
     {
         UnityWebRequest request = UnityWebRequestTexture.GetTexture(uri);
+
+        request.timeout = textureTimeoutSeconds;
 
         yield return request.SendWebRequest();
 
@@ -110,22 +117,25 @@ public class NetManager : MonoBehaviour
         }
 
         string[] lines = data.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        for (int i = 0; i < lines.Length / 2; i += 2)
+        if (lines.Length > 1)
         {
-            string name = lines[i];
-            string json = lines[i + 1];
+            for (int i = 0; i <= lines.Length / 2; i += 2)
+            {
+                string name = lines[i];
+                string json = lines[i + 1];
 
-            if (Schemas.FromJson(name, json, out object schema))
-            {
-                OnSchemaReceived(schema);
-            }
-            else
-            {
-                print(
-                    "Unable to handle data:\n" +
-                    $"\tname: {name}\n" +
-                    $"\tjson: {json}"
-               );
+                if (Schemas.FromJson(name, json, out object schema))
+                {
+                    OnSchemaReceived(schema);
+                }
+                else
+                {
+                    print(
+                        "Unable to handle data:\n" +
+                        $"\tname: {name}\n" +
+                        $"\tjson: {json}"
+                   );
+                }
             }
         }
     }

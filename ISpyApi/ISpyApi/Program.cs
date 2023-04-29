@@ -77,18 +77,21 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
 
         // Deserialize schemas
         List<object> schemas = new();
-        for (int i = 0; i < lines.Length / 2; i += 2)
+        if (lines.Length > 1)
         {
-            string name = lines[i];
-            string json = lines[i + 1];
+            for (int i = 0; i <= lines.Length / 2; i += 2)
+            {
+                string name = lines[i];
+                string json = lines[i + 1];
 
-            if (Schemas.FromJson(name, json, out object schema))
-            {
-                schemas.Add(schema);
-            }
-            else
-            {
-                return Results.BadRequest();
+                if (Schemas.FromJson(name, json, out object schema))
+                {
+                    schemas.Add(schema);
+                }
+                else
+                {
+                    return Results.BadRequest();
+                }
             }
         }
 

@@ -17,7 +17,7 @@ public abstract class Game : ITickable, ITimeout
     {
         this.resources = resources;
         GameType = gameType;
-        Host = CreatePlayer(true, hostname);
+        Host = InternalCreatePlayer(true, hostname);
         Code = resources.CodeFactory.GetCode();
 
         Players.Add(Host.Guid, Host);
@@ -27,7 +27,7 @@ public abstract class Game : ITickable, ITimeout
     {
         (this as ITimeout).ResetTimeout();
 
-        Player player = CreatePlayer(false, username);
+        Player player = InternalCreatePlayer(false, username);
         Players.Add(player.Guid, player);
         return player;
     }
@@ -54,12 +54,26 @@ public abstract class Game : ITickable, ITimeout
         return InternalHandleSchema(guid, schema);
     }
 
+    // RequestPeriodicOutput is called during a poll, that means it is also an indicator of client intersest
+    public void RequestPeriodicOutput(Guid guid)
+    {
+        (this as ITimeout).ResetTimeout();
+
+        if (Players.TryGetValue(guid, out var player))
+        {
+            (player as ITimeout).ResetTimeout();
+        }
+
+        InternalRequestPeriodicOutput(guid);
+    }
+
     protected void SendSchema(Guid guid, object schema)
     {
         resources.SendSchema(guid, schema);
     }
 
-    protected abstract Player CreatePlayer(bool isHost, string username);
+    protected abstract Player InternalCreatePlayer(bool isHost, string username);
     protected abstract void InternalTick(double deltaTime);
     protected abstract bool InternalHandleSchema(Guid guid, object schema);
+    protected abstract void InternalRequestPeriodicOutput(Guid guid);
 }
