@@ -6,7 +6,7 @@ public abstract class Game : ITickable, ITimeout
 {
     private const double PlayerTimeoutSeconds = 5;
 
-    private readonly Resources resources;
+    protected readonly Resources resources;
     public string GameType { get; init; }
     public Player Host { get; init; }
     public ulong Code { get; init; }
@@ -17,18 +17,21 @@ public abstract class Game : ITickable, ITimeout
     {
         this.resources = resources;
         GameType = gameType;
-        Host = InternalCreatePlayer(true, hostname);
+        Host = InternalCreatePlayer(true, hostname)!;
         Code = resources.CodeFactory.GetCode();
 
         Players.Add(Host.Guid, Host);
     }
 
-    public Player Join(string username)
+    public Player? Join(string username)
     {
         (this as ITimeout).ResetTimeout();
 
-        Player player = InternalCreatePlayer(false, username);
-        Players.Add(player.Guid, player);
+        Player? player = InternalCreatePlayer(false, username);
+        if (player is not null)
+        {
+            Players.Add(player.Guid, player);
+        }
         return player;
     }
 
@@ -72,7 +75,7 @@ public abstract class Game : ITickable, ITimeout
         resources.SendSchema(guid, schema);
     }
 
-    protected abstract Player InternalCreatePlayer(bool isHost, string username);
+    protected abstract Player? InternalCreatePlayer(bool isHost, string username);
     protected abstract void InternalTick(double deltaTime);
     protected abstract bool InternalHandleSchema(Guid guid, object schema);
     protected abstract void InternalRequestPeriodicOutput(Guid guid);

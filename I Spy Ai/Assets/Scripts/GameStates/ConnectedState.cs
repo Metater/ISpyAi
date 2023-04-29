@@ -5,7 +5,6 @@ public class ConnectedState : GameState
 {
     public readonly bool isHosting;
     public readonly Guid guid;
-    public long serverFileTimeUtc = DateTime.UtcNow.ToFileTimeUtc();
     public List<string> players = new();
 
     public ConnectedState(GameManager manager, string gameType, string username, ulong code, bool isHosting, Guid guid) : base(manager, gameType, username, code)

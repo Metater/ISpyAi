@@ -35,16 +35,38 @@ public class JoinResponse
 [Serializable]
 public class PeriodicUpdate
 {
-    public long serverFileTimeUtc;
     public List<string> players;
 }
 #endregion
 
 #region Fibbage Schemas
 [Serializable]
+public enum FibbageImageCategory
+{
+    Animal,
+    Art,
+    Photog
+}
+
+[Serializable]
 public class FibbagePeriodicUpdate
 {
-    public string state;
+    public string message;
+    public double time;
+    public FibbageStep step;
+}
+
+[Serializable]
+public enum FibbageStep
+{
+    Idle,
+    Selection
+}
+
+[Serializable]
+public class FibbageOptionsUpdate
+{
+    public List<string> uris;
 }
 #endregion
 

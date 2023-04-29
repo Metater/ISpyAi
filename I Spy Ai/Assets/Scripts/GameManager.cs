@@ -82,7 +82,6 @@ public class GameManager : MonoBehaviour
         {
             if (State is ConnectedState connectedState)
             {
-                connectedState.serverFileTimeUtc = periodicUpdate.serverFileTimeUtc;
                 connectedState.players = periodicUpdate.players;
             }
         }
@@ -214,10 +213,6 @@ public class GameManager : MonoBehaviour
 
         if (State is ConnectedState connectedState)
         {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label($"Server File Time Utc: {connectedState.serverFileTimeUtc}");
-            GUILayout.EndHorizontal();
-
             GUILayout.BeginHorizontal();
             GUILayout.Label("Players:");
             GUILayout.EndHorizontal();
