@@ -89,7 +89,7 @@ public class GameManager : MonoBehaviour
             bool handled = false;
             if (activeManager != null)
             {
-                if (activeManager.SchemaReceived(schema))
+                if (activeManager.HandleSchema(schema))
                 {
                     handled = true;
                 }

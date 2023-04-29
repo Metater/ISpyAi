@@ -93,7 +93,7 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
         }
 
         // Send schemas to service
-        if (!service.SupplySchemas(guid, schemas))
+        if (!service.HandleSchemas(guid, schemas))
         {
             return Results.StatusCode(StatusCodes.Status429TooManyRequests);
         }

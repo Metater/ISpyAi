@@ -1,10 +1,13 @@
-﻿using ISpyApi.General;
-using ISpyApi.Utilities;
+﻿using ISpyApi.Fibbage;
+using ISpyApi.Interfaces;
+using ISpyApi.Models;
 
 namespace ISpyApi;
 
 public class Games : ITickable
 {
+    private const double GameTimeoutSeconds = 5;
+
     private readonly Resources resources;
     private readonly List<Game> games = new();
 
@@ -16,25 +19,32 @@ public class Games : ITickable
 
     public bool Host(string gameType, string hostname, out Game? game)
     {
-        // TODO This will have cool stuff
-/*        Game game = new(resources, hostname);
-        games.Add(game);
-        return game;*/
-        game = default;
-        throw new NotImplementedException();
+        game = gameType switch
+        {
+            FibbageGame.GameType => new FibbageGame(resources, hostname),
+            _ => null
+        };
+
+        if (game is not null)
+        {
+            games.Add(game);
+            return true;
+        }
+
+        return false;
     }
 
     public bool Join(ulong code, string username, out Player? player)
     {
+        player = null;
+
         var game = games.Find(g => g.Code == code);
-        if (game is null)
+        if (game is not null)
         {
-            player = default;
-            return false;
+            player = game.Join(username);
         }
 
-        player = game.Join(username);
-        return true;
+        return player is not null;
     }
 
     public void RequestPeriodicOutput(Guid guid)
@@ -49,15 +59,24 @@ public class Games : ITickable
         }
     }
 
-    public void SchemaReceived(Guid guid, object schema)
+    public void HandleSchemas(Guid guid, List<object> schemas)
     {
+        if (GetGameWithGuid(guid, out var game))
         {
-            Console.WriteLine($"Got unimplemented schema type: {schema}");
+            foreach (var schema in schemas)
+            {
+                if (!game!.HandleSchema(guid, schema))
+                {
+                    Console.WriteLine($"Schema not handled: {schema}");
+                }
+            }
         }
     }
 
     public void Tick(double deltaTime)
     {
+        games.RemoveAll(g => (g as ITimeout).ShouldTimeout(GameTimeoutSeconds));
+
         games.ForEach(g => g.Tick(deltaTime));
     }
 

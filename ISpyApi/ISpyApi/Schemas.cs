@@ -74,7 +74,7 @@ public static class Schemas
 #else
         Console.WriteLine($"Unknown schema name: {name}");
 #endif
-        schema = default;
+        schema = null;
         return false;
     }
 
@@ -87,7 +87,7 @@ public static class Schemas
         }
         catch
         {
-            schema = default;
+            schema = null;
             return false;
         }
     }

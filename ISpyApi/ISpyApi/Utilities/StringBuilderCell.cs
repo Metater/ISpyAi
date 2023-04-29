@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using ISpyApi.Interfaces;
 
 namespace ISpyApi.Utilities;
 
@@ -6,7 +7,7 @@ public class StringBuilderCell : ITimeout
 {
     private readonly object sbLock = new();
     private readonly StringBuilder sb = new();
-    private DateTime lastUsedTimeUtc = DateTime.UtcNow;
+    public DateTime LastUsedTimeUtc { get; set; } = DateTime.UtcNow;
 
     public void AppendLine(string value)
     {
@@ -20,19 +21,11 @@ public class StringBuilderCell : ITimeout
     {
         lock (sbLock)
         {
-            lastUsedTimeUtc = DateTime.UtcNow;
+            (this as ITimeout).ResetTimeout();
 
             string output = sb.ToString();
             sb.Clear();
             return output;
-        }
-    }
-
-    public bool ShouldTimeout(double timeoutSeconds)
-    {
-        lock (sbLock)
-        {
-            return (DateTime.UtcNow - LastUsedTimeUtc).TotalSeconds > timeoutSeconds;
         }
     }
 }

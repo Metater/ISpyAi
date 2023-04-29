@@ -10,7 +10,7 @@
         print("Disconnected fibbage");
     }
 
-    public override bool SchemaReceived(object schema)
+    public override bool HandleSchema(object schema)
     {
         return false;
     }

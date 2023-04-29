@@ -105,7 +105,7 @@ public class NetManager : MonoBehaviour
     {
         if (data.Trim() == "error")
         {
-            print("Got error");
+            print("Got error in data handler");
             return;
         }
 

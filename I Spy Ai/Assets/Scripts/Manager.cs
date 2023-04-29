@@ -14,7 +14,7 @@ public abstract class Manager : MonoBehaviour
 
     public abstract void Connected(ConnectedState connectedState);
     public abstract void Disconnected(DisconnectedState disconnectedState);
-    public abstract bool SchemaReceived(object schema);
+    public abstract bool HandleSchema(object schema);
 
     protected void SendSchema(object schema)
     {

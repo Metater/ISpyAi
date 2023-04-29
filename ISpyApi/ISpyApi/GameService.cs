@@ -3,6 +3,7 @@ using System;
 using System.Threading.Channels;
 using System.Collections.Concurrent;
 using ISpyApi.Utilities;
+using ISpyApi.Interfaces;
 
 namespace ISpyApi;
 
@@ -42,7 +43,7 @@ public class GameService : BackgroundService, ITickable
     // Host game and generate response
     public bool Host(string gameType, string hostname, out HostResponse? response)
     {
-        response = default;
+        response = null;
 
         lock (gamesLock)
         {
@@ -64,7 +65,7 @@ public class GameService : BackgroundService, ITickable
     // Join game and generate response
     public bool Join(ulong code, string username, out JoinResponse? response)
     {
-        response = default;
+        response = null;
 
         lock (gamesLock)
         {
@@ -73,6 +74,7 @@ public class GameService : BackgroundService, ITickable
                 response = new JoinResponse
                 {
                     guid = player!.Guid,
+                    gameType = player.Game.GameType,
                     username = player.Username
                 };
             }
@@ -82,7 +84,7 @@ public class GameService : BackgroundService, ITickable
     }
 
     // Queue schemas to be handled for a client
-    public bool SupplySchemas(Guid guid, List<object> schemas)
+    public bool HandleSchemas(Guid guid, List<object> schemas)
     {
         return input.Writer.TryWrite((guid, schemas));
     }
@@ -120,7 +122,7 @@ public class GameService : BackgroundService, ITickable
             // Remove old string builders after timeout
             foreach ((Guid guid, StringBuilderCell sb) in output)
             {
-                if (sb.ShouldTimeout(OutputTimeoutSeconds))
+                if ((sb as ITimeout).ShouldTimeout(OutputTimeoutSeconds))
                 {
                     output.TryRemove(guid, out _);
                 }
@@ -137,10 +139,7 @@ public class GameService : BackgroundService, ITickable
         {
             lock (gamesLock)
             {
-                foreach (var schema in schemas)
-                {
-                    games.SchemaReceived(guid, schema);
-                }
+                games.HandleSchemas(guid, schemas);
             }
         }
     }
