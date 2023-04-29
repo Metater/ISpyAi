@@ -19,6 +19,7 @@ using UnityEngine;
 public class HostResponse
 {
     public SerializableGuid guid;
+    public string gameType;
     public string hostname;
     public ulong code;
 }
@@ -27,6 +28,7 @@ public class HostResponse
 public class JoinResponse
 {
     public SerializableGuid guid;
+    public string gameType;
     public string username;
 }
 

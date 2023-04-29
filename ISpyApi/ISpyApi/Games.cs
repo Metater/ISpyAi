@@ -3,7 +3,7 @@ using ISpyApi.Utilities;
 
 namespace ISpyApi;
 
-public class Games
+public class Games : ITickable
 {
     private readonly Resources resources;
     private readonly List<Game> games = new();
@@ -14,11 +14,14 @@ public class Games
         resources = new Resources(random, new(random), new(random), sendSchema);
     }
 
-    public Game Host(string hostname)
+    public bool Host(string gameType, string hostname, out Game? game)
     {
-        Game game = new(resources, hostname);
+        // TODO This will have cool stuff
+/*        Game game = new(resources, hostname);
         games.Add(game);
-        return game;
+        return game;*/
+        game = default;
+        throw new NotImplementedException();
     }
 
     public bool Join(ulong code, string username, out Player? player)

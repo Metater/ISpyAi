@@ -1,8 +1,10 @@
 using ISpyApi;
 using ISpyApi.Utilities;
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
+
+const int ServiceProcessWaitMs = 100;
+const int TickPeriodMs = 100;
 
 // Create app builder
 var builder = WebApplication.CreateBuilder(args);
@@ -15,15 +17,19 @@ builder.Services.AddHostedService(p => p.GetRequiredService<GameService>());
 var app = builder.Build();
 
 // Called by a unity client that wants to host a game
-app.MapGet("/host/{hostname}", (string hostname, GameService service) =>
+app.MapGet("/host/{gameType}/{hostname}", (string gameType, string hostname, GameService service) =>
 {
     if (!Verify.Username(ref hostname))
     {
         return "error";
     }
 
-    var response = service.Host(hostname);
-    return Schemas.ToJson(response);
+    if (service.Host(gameType, hostname, out var response))
+    {
+        return Schemas.ToJson(response);
+    }
+
+    return "error";
 });
 
 // Called by a unity client that wants to join a game
@@ -36,7 +42,7 @@ app.MapGet("/join/{code}/{username}", (ulong code, string username, GameService 
 
     if (service.Join(code, username, out var response))
     {
-        return Schemas.ToJson(response!);
+        return Schemas.ToJson(response);
     }
 
     return "error";
@@ -93,7 +99,7 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
         }
 
         // Wait for service to process schemas and queue responses
-        await Task.Delay(100);
+        await Task.Delay(ServiceProcessWaitMs);
 
         // Send back any queued schemas from service
         string output = service.RequestSchemas(guid);
@@ -106,7 +112,7 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
 });
 
 // Run app on port 44464
-app.RunAsync("http://*:44464");
+_ = app.RunAsync("http://*:44464");
 
 // Tick service periodically
 GameService service = app.Services.GetRequiredService<GameService>();
@@ -114,7 +120,7 @@ Stopwatch sw = Stopwatch.StartNew();
 double lastSeconds = 0;
 while (!Console.KeyAvailable)
 {
-    await Task.Delay(100);
+    await Task.Delay(TickPeriodMs);
 
     double seconds = sw.Elapsed.TotalSeconds;
     double deltaTime = seconds - lastSeconds;

@@ -1,20 +1,22 @@
-﻿using ISpyApi.Factories;
+﻿using ISpyApi.General;
 
 namespace ISpyApi;
 
-public class Game
+public abstract class Game
 {
     private const double TimeoutSeconds = 10;
 
     private readonly Resources resources;
+    public string GameType { get; init; }
     public Player Host { get; init; }
     public ulong Code { get; init; }
     public Dictionary<Guid, Player> Players { get; init; } = new();
     public DateTime LastUsedTimeUtc { get; private set; } = DateTime.UtcNow;
 
-    public Game(Resources resources, string hostname)
+    public Game(Resources resources, string gameType, string hostname)
     {
         this.resources = resources;
+        GameType = gameType;
         Host = new(hostname);
         Code = resources.CodeFactory.GetCode();
 

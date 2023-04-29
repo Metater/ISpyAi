@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class NetManager : MonoBehaviour
 {
@@ -17,10 +18,7 @@ public class NetManager : MonoBehaviour
     {
         sb = new();
 
-        OnDisconnected += () =>
-        {
-            sb.Clear();
-        };
+        OnDisconnected += ClearQueuedData;
     }
 
     public void ClearQueuedData()
@@ -33,9 +31,9 @@ public class NetManager : MonoBehaviour
         sb.AppendLine(Schemas.ToJson(schema));
     }
 
-    public IEnumerator Host(string hostname)
+    public IEnumerator Host(string gameType, string hostname)
     {
-        using UnityWebRequest request = UnityWebRequest.Get(GetHostUri(hostname));
+        using UnityWebRequest request = UnityWebRequest.Get(GetHostUri(gameType, hostname));
 
         yield return request.SendWebRequest();
 
@@ -105,6 +103,12 @@ public class NetManager : MonoBehaviour
 
     private void HandleData(string data)
     {
+        if (data.Trim() == "error")
+        {
+            print("Got error");
+            return;
+        }
+
         string[] lines = data.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         for (int i = 0; i < lines.Length / 2; i += 2)
         {
@@ -126,7 +130,7 @@ public class NetManager : MonoBehaviour
         }
     }
 
-    private static string GetHostUri(string hostname) => $"http://75.0.193.55:44464/host/{hostname}";
+    private static string GetHostUri(string gameType, string hostname) => $"http://75.0.193.55:44464/host/{gameType}/{hostname}";
     private static string GetJoinUri(ulong code, string username) => $"http://75.0.193.55:44464/join/{code}/{username}";
     private static string GetPollUri(Guid guid) => $"http://75.0.193.55:44464/poll/{guid}";
 }

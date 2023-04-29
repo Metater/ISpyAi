@@ -8,7 +8,7 @@ public class ConnectedState : GameState
     public long serverFileTimeUtc = DateTime.UtcNow.ToFileTimeUtc();
     public List<string> players = new();
 
-    public ConnectedState(GameManager manager, string username, ulong code, bool isHosting, Guid guid) : base(manager, username, code)
+    public ConnectedState(GameManager manager, string gameType, string username, ulong code, bool isHosting, Guid guid) : base(manager, gameType, username, code)
     {
         this.isHosting = isHosting;
         this.guid = guid;

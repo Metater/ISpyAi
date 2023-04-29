@@ -30,6 +30,8 @@ public class GameService : BackgroundService, ITickable
                 output.TryAdd(guid, sb);
             }
 
+            // Avoid race condition, stored and this sb instance could differ
+            // sendSchema and RequestSchemas both access from different threads
             if (output.TryGetValue(guid, out sb))
             {
                 sb.AppendLine(Schemas.ToJson(schema));
@@ -38,38 +40,45 @@ public class GameService : BackgroundService, ITickable
     }
 
     // Host game and generate response
-    public HostResponse Host(string hostname)
+    public bool Host(string gameType, string hostname, out HostResponse? response)
     {
+        response = default;
+
         lock (gamesLock)
         {
-            var game = games.Host(hostname);
-            return new HostResponse
+            if (games.Host(gameType, hostname, out var game))
             {
-                guid = game.Host.Guid,
-                hostname = game.Host.Username,
-                code = game.Code
-            };
+                response = new HostResponse
+                {
+                    guid = game!.Host.Guid,
+                    gameType = game.GameType,
+                    hostname = game.Host.Username,
+                    code = game.Code
+                };
+            }
         }
+
+        return response is not null;
     }
 
     // Join game and generate response
     public bool Join(ulong code, string username, out JoinResponse? response)
     {
+        response = default;
+
         lock (gamesLock)
         {
-            if (games.Join(code, username, out Player? player))
+            if (games.Join(code, username, out var player))
             {
                 response = new JoinResponse
                 {
                     guid = player!.Guid,
                     username = player.Username
                 };
-                return true;
             }
-
-            response = default;
-            return false;
         }
+
+        return response is not null;
     }
 
     // Queue schemas to be handled for a client
@@ -93,6 +102,8 @@ public class GameService : BackgroundService, ITickable
             games.RequestPeriodicOutput(guid);
         }
 
+        // Avoid race condition, stored and this sb instance could differ
+        // sendSchema and RequestSchemas both access from different threads
         if (output.TryGetValue(guid, out sb))
         {
             return sb.ToString();

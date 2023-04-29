@@ -10,13 +10,16 @@ public class GameManager : MonoBehaviour
     public List<Manager> managers;
     private GameState lastState = null;
     public GameState State { get; private set; }
+    private Manager activeManager = null;
 
     private void Awake()
     {
-        State = new DisconnectedState(this, "Unnamed", 0);
+        State = new DisconnectedState(this, "None", "Unnamed", 0);
 
         netManager.OnSchemaReceived += OnSchemaReceived;
         netManager.OnDisconnected += OnDisconnected;
+
+        managers.ForEach(m => m.Init(this));
     }
 
     private void Start()
@@ -30,11 +33,23 @@ public class GameManager : MonoBehaviour
         {
             if (lastState is not ConnectedState && State is ConnectedState connectedState)
             {
-                managers.ForEach(m => m.Connected(connectedState));
+                foreach (var manager in managers)
+                {
+                    if (manager.game == State.gameType)
+                    {
+                        activeManager = manager;
+                        activeManager.Connected(connectedState);
+                        break;
+                    }
+                }
             }
             else if (lastState is not DisconnectedState && State is DisconnectedState disconnectedState)
             {
-                managers.ForEach(m => m.Disconnected(disconnectedState));
+                if (activeManager != null)
+                {
+                    activeManager.Disconnected(disconnectedState);
+                    activeManager = null;
+                }
             }
 
             lastState = State;
@@ -49,7 +64,7 @@ public class GameManager : MonoBehaviour
             {
                 netManager.ClearQueuedData();
 
-                State = new ConnectedState(this, hostResponse.hostname, hostResponse.code, true, hostResponse.guid);
+                State = new ConnectedState(this, hostResponse.gameType, hostResponse.hostname, hostResponse.code, true, hostResponse.guid);
             }
         }
         else if (schema is JoinResponse joinResponse)
@@ -58,7 +73,7 @@ public class GameManager : MonoBehaviour
             {
                 netManager.ClearQueuedData();
 
-                State = new ConnectedState(this, joinResponse.username, disconnectedState.code, true, joinResponse.guid);
+                State = new ConnectedState(this, joinResponse.gameType, joinResponse.username, disconnectedState.code, true, joinResponse.guid);
             }
         }
         else if (schema is PeriodicUpdate periodicUpdate)
@@ -72,25 +87,33 @@ public class GameManager : MonoBehaviour
         else
         {
             bool handled = false;
-            foreach (var manager in managers)
+            if (activeManager != null)
+            {
+                if (activeManager.SchemaReceived(schema))
+                {
+                    handled = true;
+                }
+            }
+
+/*            foreach (var manager in managers)
             {
                 if (manager.SchemaReceived(schema))
                 {
                     handled = true;
                     break;
                 }
-            }
+            }*/
 
             if (!handled)
             {
-                print($"Got unimplemented schema with name: {schema}");
+                print($"Schema not handled: {schema}");
             }
         }
     }
 
     private void OnDisconnected()
     {
-        State = new DisconnectedState(this, State.username, State.code);
+        State = new DisconnectedState(this, State.gameType, State.username, State.code);
     }
 
     private IEnumerator PollLoop()
@@ -112,6 +135,10 @@ public class GameManager : MonoBehaviour
 
         GUILayout.BeginHorizontal();
         GUILayout.Label($"State: {State.GetType().Name}");
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Label($"Game Type: {State.gameType}");
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
@@ -170,9 +197,11 @@ public class GameManager : MonoBehaviour
         if (State is DisconnectedState)
         {
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Host"))
+            if (GUILayout.Button("Host Fibbage"))
             {
-                StartCoroutine(netManager.Host(State.username));
+                State.gameType = "Fibbage";
+
+                StartCoroutine(netManager.Host(State.gameType, State.username));
             }
             if (GUILayout.Button("Join"))
             {
@@ -185,7 +214,7 @@ public class GameManager : MonoBehaviour
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Disconnect"))
             {
-                State = new DisconnectedState(this, State.username, State.code);
+                State = new DisconnectedState(this, State.gameType, State.username, State.code);
             }
             GUILayout.EndHorizontal();
         }
