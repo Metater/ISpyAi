@@ -4,7 +4,7 @@ namespace ISpyApi.Models;
 
 public abstract class Game : ITickable, ITimeout
 {
-    private const double PlayerTimeoutSeconds = 5;
+    private const double PlayerTimeoutSeconds = 50;
 
     protected readonly Resources resources;
     public string GameType { get; init; }
@@ -43,6 +43,11 @@ public abstract class Game : ITickable, ITimeout
             if ((player as ITimeout).ShouldTimeout(PlayerTimeoutSeconds))
             {
                 toRemove.Add(player.Guid);
+
+                if (player.IsHost)
+                {
+
+                }
             }
         }
         toRemove.ForEach(g => Players.Remove(g));

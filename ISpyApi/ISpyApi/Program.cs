@@ -3,7 +3,7 @@ using ISpyApi.Utilities;
 using System.Diagnostics;
 using System.Text;
 
-const int ServiceProcessWaitMs = 100;
+const int HandleSchemasWaitMs = 100;
 const int TickPeriodMs = 100;
 
 // Create app builder
@@ -102,7 +102,7 @@ app.MapPost("/poll/{guid}", async (Guid guid, HttpRequest request, Stream body, 
         }
 
         // Wait for service to process schemas and queue responses
-        await Task.Delay(ServiceProcessWaitMs);
+        await Task.Delay(HandleSchemasWaitMs);
 
         // Send back any queued schemas from service
         string output = service.RequestSchemas(guid);

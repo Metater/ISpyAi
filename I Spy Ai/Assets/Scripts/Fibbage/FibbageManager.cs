@@ -1,27 +1,64 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class FibbageManager : Manager
 {
-    public List<RawImage> optionRawImages;
+    private const int OptionsCount = 3;
+
+    public RectTransform idleTransform;
+    public RectTransform selectionTransform;
+    public List<FibbageSelections> selections;
     private FibbageState state = null;
+    private FibbagePeriodicUpdate periodicUpdate = null;
 
     private void Awake()
     {
+        selections.ForEach(o => o.Hide());
+
         gameObject.SetActive(false);
+    }
+
+    private void Update()
+    {
+        switch (periodicUpdate.phase)
+        {
+            case FibbagePhase.Idle:
+                idleTransform.gameObject.SetActive(true);
+                selectionTransform.gameObject.SetActive(false);
+
+                if (state.lastOptionsUpdate == null)
+                {
+                    selections.ForEach(o => o.Hide());
+                }
+                break;
+            case FibbagePhase.Selection:
+                idleTransform.gameObject.SetActive(false);
+                selectionTransform.gameObject.SetActive(true);
+
+                selections.ForEach(o => o.Show());
+                state.lastOptionsUpdate = null;
+                break;
+        }
     }
 
     public override void Connected(ConnectedState connectedState)
     {
         state = new FibbageState();
+        periodicUpdate = new FibbagePeriodicUpdate
+        {
+            message = "",
+            time = 0,
+            phase = FibbagePhase.Idle
+        };
 
         gameObject.SetActive(true);
     }
 
     public override void Disconnected(DisconnectedState disconnectedState)
     {
+        selections.ForEach(o => o.Hide());
         state = null;
+        periodicUpdate = null;
 
         gameObject.SetActive(false);
     }
@@ -30,13 +67,16 @@ public class FibbageManager : Manager
     {
         if (schema is FibbagePeriodicUpdate periodicUpdate)
         {
-            state.ApplyPeriodicUpdate(periodicUpdate);
+            this.periodicUpdate = periodicUpdate;
         }
         else if (schema is FibbageOptionsUpdate optionsUpdate)
         {
-            for (int i = 0; i < 3; i++)
+            selections.ForEach(o => o.Hide());
+            state.lastOptionsUpdate = optionsUpdate;
+
+            for (int i = 0; i < OptionsCount; i++)
             {
-                StartCoroutine(netManager.ApplyTextureFromUri(optionsUpdate.uris[i], optionRawImages[i]));
+                StartCoroutine(netManager.ApplyTextureFromUri(optionsUpdate.uris[i], selections[i].image));
             }
         }
         else
@@ -49,25 +89,28 @@ public class FibbageManager : Manager
 
     public void OptionButton(int i)
     {
-        // TODO Do something cool
+        SendSchema(new FibbageSelectionUpdate
+        {
+            index = i
+        });
     }
 
     private void OnGUI()
     {
         GUILayout.BeginArea(new Rect(Screen.width - 300, 0, 300, 9999));
 
-        if (state != null)
+        if (periodicUpdate != null)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"Message: {state.message}");
+            GUILayout.Label($"Message: {periodicUpdate.message}");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"Time: {state.time}");
+            GUILayout.Label($"Time: {periodicUpdate.time}");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"Step: {state.step}");
+            GUILayout.Label($"Phase: {periodicUpdate.phase}");
             GUILayout.EndHorizontal();
         }
 

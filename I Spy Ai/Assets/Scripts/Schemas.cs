@@ -53,18 +53,32 @@ public class FibbagePeriodicUpdate
 {
     public string message;
     public double time;
-    public FibbageStep step;
+    public FibbagePhase phase;
 }
 
 [Serializable]
-public enum FibbageStep
+public enum FibbagePhase
 {
     Idle,
-    Selection
+    Selection,
+    Guessing,
+    Results
 }
 
 [Serializable]
 public class FibbageOptionsUpdate
+{
+    public List<string> uris;
+}
+
+[Serializable]
+public class FibbageSelectionUpdate
+{
+    public int index;
+}
+
+[Serializable]
+public class FibbageGuessesUpdate
 {
     public List<string> uris;
 }
